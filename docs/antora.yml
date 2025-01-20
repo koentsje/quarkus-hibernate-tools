@@ -1,0 +1,5 @@
+name: quarkus-hibernate-tools
+title: Hibernate Tools
+version: dev
+nav:
+  - modules/ROOT/nav.adoc
