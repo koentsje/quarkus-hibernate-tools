@@ -10,6 +10,13 @@
     </parent>
 
     <artifactId>quarkus-hibernate-tools-cli</artifactId>
-    <name>Quarkus Hibernate Tools - Deployment</name>
+    <name>Quarkus Hibernate Tools - CLI</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-picocli</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
