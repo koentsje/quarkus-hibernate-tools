@@ -6,7 +6,7 @@ import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine.Command;
 
 @TopCommand
-@Command(name = "reveng", subcommands = { ToJavaCommand.class })
+@Command(name = "reveng", mixinStandardHelpOptions = true, subcommands = { ToJavaCommand.class })
 public class RevengCommand implements Callable<Integer> {
 
     @Override
