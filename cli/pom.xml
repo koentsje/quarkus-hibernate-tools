@@ -17,6 +17,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.hibernate</groupId>
+            <artifactId>quarkus-hibernate-tools</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
