@@ -2,10 +2,12 @@ package io.quarkiverse.hibernate.cli;
 
 import java.util.concurrent.Callable;
 
+import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine.Command;
 
-@Command(name = "reveng")
-public class RevEngCommand implements Callable<Integer> {
+@TopCommand
+@Command(name = "reveng", subcommands = { ToJavaCommand.class })
+public class RevengCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
