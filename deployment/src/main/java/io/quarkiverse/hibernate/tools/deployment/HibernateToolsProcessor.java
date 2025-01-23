@@ -1,5 +1,6 @@
 package io.quarkiverse.hibernate.tools.deployment;
 
+import io.quarkiverse.hibernate.tools.runtime.HibernateToolsConfig;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.logging.Log;

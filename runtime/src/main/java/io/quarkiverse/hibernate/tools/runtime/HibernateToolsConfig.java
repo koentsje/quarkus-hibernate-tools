@@ -1,4 +1,4 @@
-package io.quarkiverse.hibernate.tools.deployment;
+package io.quarkiverse.hibernate.tools.runtime;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
