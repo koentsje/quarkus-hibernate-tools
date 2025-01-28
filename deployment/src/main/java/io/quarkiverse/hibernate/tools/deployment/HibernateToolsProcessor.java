@@ -1,11 +1,5 @@
 package io.quarkiverse.hibernate.tools.deployment;
 
-import org.aesh.command.Command;
-import org.aesh.command.CommandDefinition;
-import org.aesh.command.CommandException;
-import org.aesh.command.CommandResult;
-import org.aesh.command.invocation.CommandInvocation;
-
 import io.quarkiverse.hibernate.tools.runtime.HibernateToolsConfig;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
@@ -16,7 +10,7 @@ class HibernateToolsProcessor {
 
     private static final String FEATURE = "hibernate-tools";
 
-    private HibernateToolsConfig hibernateToolsConfig;
+    HibernateToolsConfig hibernateToolsConfig;
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -27,17 +21,7 @@ class HibernateToolsProcessor {
 
     @BuildStep
     ConsoleCommandBuildItem revengCommand() {
-        return new ConsoleCommandBuildItem(new RevengCommand());
-    }
-
-    @CommandDefinition(name = "reveng", description = "Perform reverse engineering from the database", aliases = { "r" })
-    public static class RevengCommand implements Command {
-
-        @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            commandInvocation.getShell().writeln("Hello from Reveng execution in Quarkus Terminal!");
-            return CommandResult.SUCCESS;
-        }
+        return new ConsoleCommandBuildItem(new RevengCommand(hibernateToolsConfig));
     }
 
 }
