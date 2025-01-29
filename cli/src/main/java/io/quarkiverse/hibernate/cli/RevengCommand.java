@@ -4,6 +4,7 @@ import java.util.concurrent.Callable;
 
 import jakarta.inject.Inject;
 
+import io.quarkiverse.hibernate.tools.runtime.HibernateToolsConfig;
 import io.quarkiverse.hibernate.tools.runtime.HibernateToolsService;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine.Command;
@@ -13,11 +14,12 @@ import picocli.CommandLine.Command;
 public class RevengCommand implements Callable<Integer> {
 
     @Inject
-    HibernateToolsService hibernateToolsService;
+    HibernateToolsConfig hibernateToolsConfig;
 
     @Override
     public Integer call() throws Exception {
-        hibernateToolsService.perform();
+        System.out.println("Hello from Quarkus PicoCLI Hibernate Tools:");
+        HibernateToolsService.perform(hibernateToolsConfig);
         return 0;
     }
 
