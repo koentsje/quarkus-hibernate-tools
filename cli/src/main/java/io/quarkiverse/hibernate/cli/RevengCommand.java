@@ -19,7 +19,7 @@ public class RevengCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         System.out.println("Hello from Quarkus PicoCLI Hibernate Tools:");
-        HibernateToolsService.perform(hibernateToolsConfig);
+        HibernateToolsService.toJava(hibernateToolsConfig);
         return 0;
     }
 
