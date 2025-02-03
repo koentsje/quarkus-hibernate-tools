@@ -15,7 +15,7 @@ import org.hibernate.tool.api.reveng.RevengStrategy;
 import org.hibernate.tool.api.reveng.RevengStrategyFactory;
 
 @Singleton
-public class gHibernateToolsService {
+public class HibernateToolsService {
 
     public static void toJava(HibernateToolsConfig hibernateToolsConfig) {
         System.out.println("Starting generation of Java Files");
