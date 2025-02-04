@@ -25,7 +25,11 @@ public class ToJavaCommand implements Command<CommandInvocation> {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream savedOutputPrintStream = System.out;
         System.setOut(new PrintStream(byteArrayOutputStream));
-        HibernateToolsService.toJava(hibernateToolsConfig);
+        try {
+            HibernateToolsService.toJava(hibernateToolsConfig);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
         commandInvocation.getShell().writeln("Hibernate Tools Java File Generation : ");
         commandInvocation.getShell().write(byteArrayOutputStream.toString());
         System.setOut(savedOutputPrintStream);

@@ -1,5 +1,7 @@
 package io.quarkiverse.hibernate.tools.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -13,6 +15,17 @@ public interface HibernateToolsConfig {
      * the datasource jdbc properties
      */
     Jdbc jdbc();
+
+    /**
+     * the datasource user name
+     */
+    @WithDefault("user name")
+    String username();
+
+    /**
+     * the datasource user password
+     */
+    Optional<String> password();
 
     interface Jdbc {
 

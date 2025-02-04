@@ -28,5 +28,47 @@ endif::add-copy-button-to-env-var[]
 |string
 |`<datasource jdbc url>`
 
+a|icon:lock[title=Fixed at build time] [[quarkus-hibernate-tools_quarkus-datasource-username]] [.property-path]##link:#quarkus-hibernate-tools_quarkus-datasource-username[`quarkus.datasource.username`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.datasource.username+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+the datasource user name
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_DATASOURCE_USERNAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_DATASOURCE_USERNAME+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|`user name`
+
+a|icon:lock[title=Fixed at build time] [[quarkus-hibernate-tools_quarkus-datasource-password]] [.property-path]##link:#quarkus-hibernate-tools_quarkus-datasource-password[`quarkus.datasource.password`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.datasource.password+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+the datasource user password
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_DATASOURCE_PASSWORD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_DATASOURCE_PASSWORD+++`
+endif::add-copy-button-to-env-var[]
+--
+|string
+|
+
 |===
 
