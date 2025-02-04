@@ -10,7 +10,7 @@ import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine.Command;
 
 @TopCommand
-@Command(name = "reveng", mixinStandardHelpOptions = true, version = "7.0.0.Beta3", subcommands = { ToJavaCommand.class })
+@Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.5.Final", subcommands = { ToJavaCommand.class })
 public class RevengCommand implements Callable<Integer> {
 
     @Inject
