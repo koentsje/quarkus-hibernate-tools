@@ -2,8 +2,10 @@ package io.quarkiverse.hibernate.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
@@ -23,25 +25,35 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "to-java")
 public class ToJavaCommand implements Callable<Integer> {
 
-    private Path getApplicationPath() {
-        return new File(".").getAbsoluteFile().toPath();
+    private Path projectRoot() {
+        return Paths.get(System.getProperty("user.dir")).toAbsolutePath();
     }
 
     private QuarkusBootstrap buildQuarkusBootsTrap() {
-        Path currentPath = getApplicationPath();
-        System.out.println(currentPath);
+        Path currentPath = projectRoot();
         return QuarkusBootstrap
                 .builder()
+                .addExcludedPath(applicationPropertiesPath())
                 .setApplicationRoot(currentPath)
+                .setIsolateDeployment(true)
+                .setBaseClassLoader(getClass().getClassLoader())
                 .setProjectRoot(currentPath)
                 .build();
+    }
+
+    private Path applicationPropertiesPath() {
+        try {
+            return new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).toPath();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private BuildTimeConfigurationReader createBuildTimeConfigurationReader() {
         QuarkusBootstrap qbt = buildQuarkusBootsTrap();
         System.out.println("Quarkus bootstrap is built");
         try (CuratedApplication curatedApplication = qbt.bootstrap()) {
-            ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
+            ClassLoader classLoader = curatedApplication.getBaseRuntimeClassLoader();
             return new BuildTimeConfigurationReader(classLoader);
         } catch (BootstrapException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -78,11 +90,11 @@ public class ToJavaCommand implements Callable<Integer> {
         ClassLoader ocl = Thread.currentThread().getContextClassLoader();
         try {
             QuarkusBootstrap qbt = buildQuarkusBootsTrap();
-            System.out.println("Quarkus bootstrap is built" + qbt);
+            System.out.println("Quarkus bootstrap is built: " + qbt);
             CuratedApplication ca = qbt.bootstrap();
             System.out.println("Curated Application is bootstrapped: " + ca);
             ClassLoader ncl = ca.createDeploymentClassLoader();
-            System.out.println("Deployment ClassLoader is created: " + ncl);
+            System.out.println("ClassLoader is created: " + ncl);
             Thread.currentThread().setContextClassLoader(ncl);
             System.out.println("Class loaders are swapped");
             URL url = ncl.getResource("application.properties");
