@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 
+import org.apache.maven.model.Model;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -19,7 +20,11 @@ import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.builder.BuildChain;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.deployment.QuarkusAugmentor;
@@ -49,10 +54,49 @@ public class RevengCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         System.out.println("Hello from Quarkus PicoCLI Hibernate Tools:");
-        acceptSomeStuff();
-        // doSomeStuff();
+        try (CuratedApplication curatedApplication = createCuratedApplication(projectRoot())) {
+            //accept(curatedApplication, map);
+            //QuarkusClassLoader quarkusClassLoader = curatedApplication.getOrCreateAugmentClassLoader();
+            //System.out.println("Quarkus class loader : " + quarkusClassLoader.getClass().getName());
+            //SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+            //        .instance());
+            //Config config = smallRyeConfigProviderResolver.getConfig(quarkusClassLoader);
+            //System.out.println("Config found: " + config);
+            //            SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+            //                    .instance());
+            //            Config config = smallRyeConfigProviderResolver.getConfig(quarkusClassLoader);
+            //            System.out.println("Config found: " + config);
+            //            for (ConfigSource cs : config.getConfigSources()) {
+            //                System.out.println(cs.getName());
+            //            }
+            //
+            //            ConfigValue configValue = (ConfigValue) config.getConfigValue("quarkus.datasource.jdbc.url");
+            //            System.out.println("JDBC URL Config Value: " + configValue);
+            //            System.out.println("  JDBC URL: " + configValue.getValue());
+        }
+        // acceptSomeStuff();
+        doSomeStuff();
         //     HibernateToolsService.toJava(hibernateToolsConfig);
         return 0;
+    }
+
+    private void handleMaven() {
+        try {
+            Path mavenPomPath = mavenPom();
+            System.out.println("maven pom location : " + mavenPomPath);
+            Model model = ModelUtils.readModel(mavenPomPath);
+            System.out.println("target folder is : " + model.getBuild().getOutputDirectory());
+        } catch (IOException e) {
+            throw new RuntimeException("Could not read maven pom file", e);
+        }
+    }
+
+    private void handleGradle() {
+        System.out.println("handling gradle case");
+    }
+
+    private Path mavenPom() {
+        return projectRoot().resolve("pom.xml");
     }
 
     private void acceptSomeStuff() {
@@ -82,12 +126,13 @@ public class RevengCommand implements Callable<Integer> {
         Path projectRoot = projectRoot();
         System.out.println("Project root: " + projectRoot);
         try {
-            CuratedApplication curatedApplication = QuarkusBootstrap
-                    .builder()
-                    .setApplicationRoot(projectRoot)
-                    .setProjectRoot(projectRoot)
-                    .build()
-                    .bootstrap();
+            //            CuratedApplication curatedApplication = QuarkusBootstrap
+            //                    .builder()
+            //                    .setApplicationRoot(projectRoot)
+            //                    .setProjectRoot(projectRoot)
+            //                    .build()
+            //                    .bootstrap();
+            CuratedApplication curatedApplication = createMavenBuilder(projectRoot).build().bootstrap();
             System.out.println("Curated application: " + curatedApplication);
             //            QuarkusClassLoader quarkusClassLoader = curatedApplication.createDeploymentClassLoader();
             QuarkusClassLoader quarkusClassLoader = curatedApplication.createDeploymentClassLoader();
@@ -107,7 +152,7 @@ public class RevengCommand implements Callable<Integer> {
             QuarkusClassLoader.Builder configCLBuilder = QuarkusClassLoader.builder("Reveng CL", quarkusClassLoader, false);
             SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
                     .instance());
-            Config config = smallRyeConfigProviderResolver.getConfig(quarkusClassLoader);
+            Config config = smallRyeConfigProviderResolver.getConfig();
             System.out.println("Config found: " + config);
             for (ConfigSource cs : config.getConfigSources()) {
                 System.out.println(cs.getName());
@@ -201,30 +246,41 @@ public class RevengCommand implements Callable<Integer> {
 
                 System.out.println("Beginning doing the real stuff");
                 ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-                QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
+                //QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
 
                 try {
-
+                    System.out.println("About to install deployment class loader");
                     Thread.currentThread().setContextClassLoader(builder.getDeploymentClassLoader());
-                    BuildChainBuilder chainBuilder = BuildChain.builder();
-                    chainBuilder.setClassLoader(builder.getDeploymentClassLoader());
+                    System.out.println("Doing stuff with deployment class loader");
+                    //BuildChainBuilder chainBuilder = BuildChain.builder();
+                    //System.out.println("chainBuilder is created : " + chainBuilder.getClass().getName());
+                    //    chainBuilder.setClassLoader(builder.getDeploymentClassLoader());
+                    //
+                    try {
+                        BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(
+                                builder.getDeploymentClassLoader());
+                        System.out.println("BuildTimeConfigurationReader was created: " + reader.getClass().getName());
+                        SmallRyeConfig src = reader.initConfiguration(
+                                builder.getLaunchMode(),
+                                builder.getBuildSystemProperties() == null ? new Properties()
+                                        : builder.getBuildSystemProperties(),
+                                builder.getRuntimeProperties() == null ? new Properties() : builder.getRuntimeProperties(),
+                                curatedApplication.getApplicationModel().getPlatformProperties());
+                        QuarkusConfigFactory.setConfig(src);
+                        BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
 
-                    BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(builder.getDeploymentClassLoader());
-                    SmallRyeConfig src = reader.initConfiguration(
-                            builder.getLaunchMode(),
-                            builder.getBuildSystemProperties() == null ? new Properties() : builder.getBuildSystemProperties(),
-                            builder.getRuntimeProperties() == null ? new Properties() : builder.getRuntimeProperties(),
-                            curatedApplication.getApplicationModel().getPlatformProperties());
-                    QuarkusConfigFactory.setConfig(src);
-                    BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
+                        System.out.println("Dumping the BuildTimeConfigurationReader.ReadResult config mappings:");
+                        for (RootDefinition rd : readResult.getAllRoots()) {
+                            System.out.println(rd.getName());
+                        }
 
-                    System.out.println("Dumping the BuildTimeConfigurationReader.ReadResult config mappings:");
-                    for (RootDefinition rd : readResult.getAllRoots()) {
-                        System.out.println(rd.getName());
+                    } catch (Throwable t) {
+                        throw new RuntimeException(t);
                     }
-
                 } finally {
+                    System.out.println("About to swap back classloaders");
                     Thread.currentThread().setContextClassLoader(originalClassLoader);
+                    System.out.println("ClassLoaders are swapped back");
                 }
 
             } catch (RuntimeException e) {
@@ -232,49 +288,72 @@ public class RevengCommand implements Callable<Integer> {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            /*
-             * try {
-             *
-             * BuildResult buildResult = builder.build().run();
-             * Map<String, byte[]> result = new HashMap<>();
-             * for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
-             * result.put(i.internalName() + ".class", i.getClassData());
-             * }
-             * for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-             * result.put(i.getName(), i.getData());
-             * }
-             * for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
-             * .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {
-             * for (TransformedClassesBuildItem.TransformedClass transformed : entry.getValue()) {
-             * if (transformed.getData() != null) {
-             * result.put(transformed.getFileName(), transformed.getData());
-             * } else {
-             * System.out.println("Unable to remove resource " + transformed.getFileName()
-             * + " as this is not supported in JBangf");
-             * }
-             * }
-             * }
-             * resultMap.put("files", result);
-             * final List<String> javaargs = new ArrayList<>();
-             * javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-             * javaargs.add(
-             * "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory"
-             * );
-             * resultMap.put("java-args", javaargs);
-             * resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
-             * if (nativeRequested) {
-             * resultMap.put("native-image", buildResult.consume(NativeImageBuildItem.class).getPath());
-             * }
-             * } catch (RuntimeException e) {
-             * throw e;
-             * } catch (Exception e) {
-             * throw new RuntimeException(e);
-             * }
-             *
-             *
-             */
         }
 
+    }
+
+    private QuarkusBootstrap.Builder createQuarkusBootstrapBuilder() {
+        Path projectRootPath = projectRoot();
+        BuildToolHelper.BuildTool buildTool = BuildToolHelper.findBuildTool(projectRootPath);
+        if (buildTool == BuildToolHelper.BuildTool.MAVEN) {
+            return createMavenBuilder(projectRootPath);
+        } else if (buildTool == BuildToolHelper.BuildTool.GRADLE) {
+            return createGradleBuilder(projectRootPath);
+        } else {
+            throw new RuntimeException("Unable to create QuarkusBootstrap.Builder; Unknown BuildTool");
+        }
+    }
+
+    private QuarkusBootstrap.Builder createMavenBuilder(Path projectRootPath) {
+        try {
+            Path classesDir = projectRootPath.resolve(getMavenClassesPath(projectRootPath));
+            BootstrapMavenContext mvnCtx = new BootstrapMavenContext(BootstrapMavenContext
+                    .config()
+                    .setCurrentProject(projectRootPath.toString()));
+            MavenArtifactResolver mvnResolver = new MavenArtifactResolver(mvnCtx);
+            return createInitialBuilder(projectRootPath)
+                    .setTargetDirectory(classesDir.getParent())
+                    .setApplicationRoot(classesDir)
+                    .setProjectRoot(projectRootPath)
+                    .setMavenArtifactResolver(mvnResolver);
+        } catch (BootstrapMavenException e) {
+            throw new RuntimeException("Exception while bootstrapping", e);
+        }
+    }
+
+    private Path getMavenClassesPath(Path projectRootPath) {
+        try {
+            String classesFolder = ModelUtils.readModel(projectRootPath.resolve("pom.xml"))
+                    .getBuild()
+                    .getOutputDirectory();
+            classesFolder = classesFolder == null ? "target/classes" : classesFolder;
+            Path result = projectRootPath.resolve(classesFolder);
+            // create folders if they don't exist;
+            if (!result.toFile().exists())
+                result.toFile().mkdirs();
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException("Could not determine Maven target folder", e);
+        }
+    }
+
+    private QuarkusBootstrap.Builder createGradleBuilder(Path projectRootPath) {
+        throw new RuntimeException("not yet implemented");
+    }
+
+    private QuarkusBootstrap.Builder createInitialBuilder(Path projectRootPath) {
+        return QuarkusBootstrap.builder()
+                .setBaseClassLoader(RevengCommand.class.getClassLoader())
+                .setIsolateDeployment(true)
+                .setMode(QuarkusBootstrap.Mode.DEV);
+    }
+
+    private CuratedApplication createCuratedApplication(Path projectRootPath) {
+        try {
+            return createQuarkusBootstrapBuilder().build().bootstrap();
+        } catch (BootstrapException e) {
+            throw new RuntimeException("Problem while bootstrapping Quarkus", e);
+        }
     }
 
 }
