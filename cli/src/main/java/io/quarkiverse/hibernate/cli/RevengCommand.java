@@ -1,6 +1,7 @@
 package io.quarkiverse.hibernate.cli;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,13 +9,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
-import jakarta.inject.Inject;
-
 import org.apache.maven.model.Model;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkiverse.hibernate.tools.runtime.HibernateToolsConfig;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -38,28 +34,71 @@ import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import picocli.CommandLine.Command;
 
 @TopCommand
 @Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.5.Final", subcommands = { ToJavaCommand.class })
 public class RevengCommand implements Callable<Integer> {
 
-    @Inject
-    HibernateToolsConfig hibernateToolsConfig;
+    //    @Inject
+    //    HibernateToolsConfig hibernateToolsConfig;
+
+    private Class<?> lookup(String className, ClassLoader loader) {
+        try {
+            return loader.loadClass(className);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private Object runMethod(Class<?> clazz, String methodName, ClassLoader loader) {
+        try {
+            return clazz.getDeclaredMethod(methodName, new Class[] { ClassLoader.class }).invoke(loader);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Object construct(Class<?> clazz) {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public Integer call() throws Exception {
         System.out.println("Hello from Quarkus PicoCLI Hibernate Tools:");
         try (CuratedApplication curatedApplication = createCuratedApplication(projectRoot())) {
-            //accept(curatedApplication, map);
-            //QuarkusClassLoader quarkusClassLoader = curatedApplication.getOrCreateAugmentClassLoader();
-            //System.out.println("Quarkus class loader : " + quarkusClassLoader.getClass().getName());
-            //SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
-            //        .instance());
+            System.out.println("Curated application was created: " + curatedApplication);
+            QuarkusClassLoader quarkusClassLoader = curatedApplication.getOrCreateAugmentClassLoader();
+            System.out.println("Quarkus augment class loader : " + quarkusClassLoader.getClass().getName());
+            Class<?> smallRyeConfigProviderResolverClass = lookup("io.smallrye.config.SmallRyeConfigProviderResolver",
+                    quarkusClassLoader);
+            System.out.println(
+                    "SmallRyeConfigProviderResolverClass: " + smallRyeConfigProviderResolverClass.getName().getClass());
+            Object smallRyeProviderResolver = construct(smallRyeConfigProviderResolverClass);
+            System.out.println("smallRyeProviderResolver is created: " + smallRyeProviderResolver.getClass().getName());
+            Object config = runMethod(smallRyeConfigProviderResolverClass, "getConfig", quarkusClassLoader);
+            System.out.println("config is created : " + config);
+            //            System.out.println("Quarkus augment class loader : " + quarkusClassLoader.getClass().getName());
+            //            Class<?> smallRyeConfigProviderResolverClass = lookup("io.smallrye.config.SmallRyeConfigProviderResolver",
+            //                    quarkusClassLoader);
+            //            System.out.println(
+            //                    "SmallRyeConfigProviderResolverClass: " + smallRyeConfigProviderResolverClass.getName().getClass());
+            //            Object smallRyeProviderResolver = runClassMethod(smallRyeConfigProviderResolverClass, "instance");
+            //            System.out.println("SmallRyeConfigProviderResolver: " + smallRyeProviderResolver);
+            //            SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+            //                    .instance());
             //Config config = smallRyeConfigProviderResolver.getConfig(quarkusClassLoader);
             //System.out.println("Config found: " + config);
             //            SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
@@ -75,7 +114,11 @@ public class RevengCommand implements Callable<Integer> {
             //            System.out.println("  JDBC URL: " + configValue.getValue());
         }
         // acceptSomeStuff();
-        doSomeStuff();
+        //        try {
+        //            doSomeStuff();
+        //        } catch (Throwable t) {
+        //            System.out.println("What the fuck happens??? " + t.getMessage());
+        //        }
         //     HibernateToolsService.toJava(hibernateToolsConfig);
         return 0;
     }
@@ -149,20 +192,64 @@ public class RevengCommand implements Callable<Integer> {
             }
 
             System.out.println("Quarkus ClassLoader: " + quarkusClassLoader);
-            QuarkusClassLoader.Builder configCLBuilder = QuarkusClassLoader.builder("Reveng CL", quarkusClassLoader, false);
-            SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
-                    .instance());
-            Config config = smallRyeConfigProviderResolver.getConfig();
-            System.out.println("Config found: " + config);
-            for (ConfigSource cs : config.getConfigSources()) {
-                System.out.println(cs.getName());
+
+            SmallRyeConfigBuilder smallRyeConfigBuilder = ConfigUtils
+                    .emptyConfigBuilder()
+                    .forClassLoader(quarkusClassLoader);
+
+            System.out.println("SmallRyeConfigBuilder is created: " + smallRyeConfigBuilder.getClass().getName());
+
+            ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+
+            try {
+
+                Thread.currentThread().setContextClassLoader(quarkusClassLoader);
+
+                System.out.println("Doing stuff with quarkus classloader");
+
+                SmallRyeConfig smallRyeConfig = smallRyeConfigBuilder.build();
+
+                System.out.println("SmallRyeConfig is built: " + smallRyeConfig.getClass().getName());
+
+                //                SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().build();
+                //
+                //                System.out.println("Config found: " + config.getClass().getName());
+                //                for (ConfigSource cs : config.getConfigSources()) {
+                //                    System.out.println(cs.getName());
+                //                }
+                //
+                //                ConfigValue configValue = (ConfigValue) config.getConfigValue("quarkus.datasource.jdbc.url");
+                //                System.out.println("JDBC URL Config Value: " + configValue);
+                //                System.out.println("  JDBC URL: " + configValue.getValue());
+
+                //                List<Class<?>> configRoots = List.of(HibernateToolsConfig.class);
+                //                BuildTimeConfigurationReader buildTimeConfigurationReader = new BuildTimeConfigurationReader(configRoots);
+                //                System.out.println("buildTimeConfigurationReader was created succesfully! "
+                //                        + buildTimeConfigurationReader.getClass().getName());
+                //                SmallRyeConfig config = buildTimeConfigurationReader.initConfiguration(
+                //                        LaunchMode.DEVELOPMENT, new Properties(), new Properties(), new HashMap<>());
+                //                System.out.println("Configuration is initiated " + config.getClass().getName());
+
+            } catch (Throwable t) {
+
+                System.out.println("Something really bad happened! " + t.getMessage());
+
+            } finally {
+
+                System.out.println("Restoring the original classloader");
+                Thread.currentThread().setContextClassLoader(originalClassLoader);
+
             }
 
-            ConfigValue configValue = (ConfigValue) config.getConfigValue("quarkus.datasource.jdbc.url");
-            System.out.println("JDBC URL Config Value: " + configValue);
-            System.out.println("  JDBC URL: " + configValue.getValue());
         } catch (BootstrapException e) {
-            e.printStackTrace();
+
+            System.out.println("BootstrapException: " + e.getMessage());
+
+            //            e.printStackTrace();
+        } catch (Throwable t) {
+
+            System.out.println("Something seriously bad happened!" + t.getMessage());
+
         }
     }
 
