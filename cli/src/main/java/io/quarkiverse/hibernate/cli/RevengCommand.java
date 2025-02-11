@@ -41,7 +41,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import picocli.CommandLine.Command;
 
 @TopCommand
-@Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.5.Final", subcommands = { ToJavaCommand.class })
+@Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.6.Final", subcommands = { ToJavaCommand.class })
 public class RevengCommand implements Callable<Integer> {
 
     //    @Inject
