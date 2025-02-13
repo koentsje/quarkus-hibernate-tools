@@ -110,7 +110,7 @@ public class RevengCommand implements Callable<Integer> {
         System.out.println("Hello from Quarkus PicoCLI Hibernate Tools:");
         try (CuratedApplication curatedApplication = createCuratedApplication(projectRoot())) {
             System.out.println("Curated application was created: " + curatedApplication);
-            QuarkusClassLoader quarkusClassLoader = curatedApplication.getOrCreateAugmentClassLoader();
+            QuarkusClassLoader quarkusClassLoader = curatedApplication.createDeploymentClassLoader();
             ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(quarkusClassLoader);
