@@ -17,15 +17,15 @@ import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "foobar")
-public class FooBarCommand implements Callable<Integer> {
+@CommandLine.Command(name = "foo")
+public class FooCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        System.out.println("Running Foobar...");
+        System.out.println("Running Foo...");
         try (CuratedApplication curatedApplication = createCuratedApplication(projectRoot())) {
             System.out.println("Curated application was created: " + curatedApplication);
-            QuarkusClassLoader quarkusClassLoader = curatedApplication.getOrCreateAugmentClassLoader();
+            QuarkusClassLoader quarkusClassLoader = curatedApplication.createDeploymentClassLoader();
             ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(quarkusClassLoader);

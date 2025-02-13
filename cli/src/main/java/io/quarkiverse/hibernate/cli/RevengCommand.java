@@ -43,7 +43,7 @@ import picocli.CommandLine.Command;
 
 @TopCommand
 @Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.6.Final", subcommands = { ToJavaCommand.class,
-        FooBarCommand.class })
+        FooCommand.class })
 public class RevengCommand implements Callable<Integer> {
 
     //    @Inject
