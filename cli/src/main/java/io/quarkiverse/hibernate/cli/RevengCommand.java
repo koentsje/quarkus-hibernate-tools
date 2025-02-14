@@ -1,8 +1,6 @@
 package io.quarkiverse.hibernate.cli;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
@@ -20,68 +18,8 @@ import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine.Command;
 
 @TopCommand
-@Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.6.Final", subcommands = { ToJavaCommand.class,
-        FooCommand.class })
+@Command(name = "reveng", mixinStandardHelpOptions = true, version = "6.6.6.Final", subcommands = { ToJavaCommand.class })
 public class RevengCommand implements Callable<Integer> {
-
-    //    @Inject
-    //    HibernateToolsConfig hibernateToolsConfig;
-
-    private Class<?> lookup(String className, ClassLoader loader) {
-        try {
-            return loader.loadClass(className);
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    private Object runMethod(Object object, String methodName, ClassLoader loader) {
-        try {
-            Method method = object.getClass().getDeclaredMethod(methodName, new Class[] { ClassLoader.class });
-            System.out.println("Method found: " + method);
-            return object.getClass().getDeclaredMethod(methodName, new Class[] { ClassLoader.class }).invoke(object, loader);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Object construct(Class<?> clazz) {
-        try {
-            return clazz.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Object runGetConfigValueMethod(Object receiver, String configName) {
-        Object result = null;
-        try {
-            Method m = receiver.getClass().getDeclaredMethod("getConfigValue", new Class[] { String.class });
-            System.out.println("getConfigValue method is found: " + m);
-            result = m.invoke(receiver, configName);
-            System.out.println("returning result: " + result);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-        return result;
-    }
-
-    private Object runGetValueMethod(Object receiver) {
-        Object result = null;
-        try {
-            Method m = receiver.getClass().getDeclaredMethod("getValue");
-            System.out.println("getValue method was found: " + m);
-            result = m.invoke(receiver);
-            System.out.println("returning result: " + result);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-        return result;
-    }
 
     @Override
     public Integer call() throws Exception {
@@ -92,20 +30,7 @@ public class RevengCommand implements Callable<Integer> {
             ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(quarkusClassLoader);
-                System.out.println("Quarkus augment class loader : " + quarkusClassLoader.getClass().getName());
-                Class<?> smallRyeConfigProviderResolverClass = lookup("io.smallrye.config.SmallRyeConfigProviderResolver",
-                        quarkusClassLoader);
-                System.out.println(
-                        "SmallRyeConfigProviderResolverClass: " + smallRyeConfigProviderResolverClass.getName().getClass());
-                Object smallRyeProviderResolver = construct(smallRyeConfigProviderResolverClass);
-                System.out.println("smallRyeProviderResolver is created: " + smallRyeProviderResolver.getClass().getName());
-                Object config = runMethod(smallRyeProviderResolver, "getConfig", quarkusClassLoader);
-                System.out.println("config is created : " + config);
-                Object configValue = runGetConfigValueMethod(config, "quarkus.datasource.jdbc.url");
-                System.out.println("JDBC URL Config Value: " + configValue);
-                Object value = runGetValueMethod(configValue);
-                System.out.println("  JDBC URL: " + runGetValueMethod(configValue));
-
+                ConfigUtil.doSomething();
             } finally {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
             }
