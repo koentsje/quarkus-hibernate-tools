@@ -12,7 +12,7 @@ public class RevengCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         System.out.println("Running Hibernate Tools reveng command");
-        ConfigUtil.doTheThing();
+        ConfigUtil.readConfig();
         return 0;
     }
 
