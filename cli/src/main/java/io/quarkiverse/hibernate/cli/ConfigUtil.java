@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
+import io.quarkiverse.hibernate.tools.runtime.HibernateToolsConfig;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -17,38 +19,52 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 
 public class ConfigUtil {
 
-    public static void readConfig() {
+    public static HibernateToolsConfig readConfiguration() {
         System.out.println("Reading the configuration");
         try (CuratedApplication curatedApplication = createCuratedApplication(projectRoot())) {
             QuarkusClassLoader quarkusClassLoader = curatedApplication.createDeploymentClassLoader();
             ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(quarkusClassLoader);
-                Object configProviderResolver = quarkusClassLoader
-                        .loadClass("io.smallrye.config.SmallRyeConfigProviderResolver")
-                        .getDeclaredConstructor()
-                        .newInstance();
-                Object config = configProviderResolver
-                        .getClass()
-                        .getDeclaredMethod("getConfig", ClassLoader.class)
-                        .invoke(configProviderResolver, quarkusClassLoader);
-                Object configValue = config
-                        .getClass()
-                        .getDeclaredMethod("getConfigValue", String.class)
-                        .invoke(config, "quarkus.datasource.jdbc.url");
-                Object value = configValue
-                        .getClass()
-                        .getDeclaredMethod("getValue")
-                        .invoke(configValue);
-                System.out.println("JDBC URL: " + value);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
-                    | InvocationTargetException e) {
-                throw new RuntimeException("Could not obtain the configuration", e);
+                return new HibernateToolsConfigImpl(resolveConfig());
             } finally {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
             }
         }
+    }
 
+    private static Object resolveConfig() {
+        try {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            Object configProviderResolver = classLoader
+                    .loadClass("io.smallrye.config.SmallRyeConfigProviderResolver")
+                    .getDeclaredConstructor()
+                    .newInstance();
+            return configProviderResolver
+                    .getClass()
+                    .getDeclaredMethod("getConfig", ClassLoader.class)
+                    .invoke(configProviderResolver, classLoader);
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
+                | InvocationTargetException e) {
+            throw new RuntimeException("Could not obtain the configuration", e);
+        }
+
+    }
+
+    private static String getConfigValue(String name, Object config) {
+        try {
+            Object configValue = config
+                    .getClass()
+                    .getDeclaredMethod("getConfigValue", String.class)
+                    .invoke(config, name);
+            return (String) configValue
+                    .getClass()
+                    .getDeclaredMethod("getValue")
+                    .invoke(configValue);
+        } catch (NoSuchMethodException | IllegalAccessException
+                | InvocationTargetException e) {
+            throw new RuntimeException("Could not obtain the configuration", e);
+        }
     }
 
     private static Path projectRoot() {
@@ -119,6 +135,48 @@ public class ConfigUtil {
         } catch (BootstrapException e) {
             throw new RuntimeException("Problem while bootstrapping Quarkus", e);
         }
+    }
+
+    private static class HibernateToolsConfigImpl implements HibernateToolsConfig {
+
+        private static final String DATASOURCE_JDBC_URL = "quarkus.datasource.jdbc.url";
+        private static final String DATASOURCE_USERNAME = "quarkus.datasource.username";
+        private static final String DATASOURCE_PASSWORD = "quarkus.datasource.password";
+
+        private final Jdbc jdbc = new JdbcImpl();
+        private String url = "";
+        private String username = "";
+        private String password = null;
+
+        HibernateToolsConfigImpl(Object config) {
+            this.url = getConfigValue(DATASOURCE_JDBC_URL, config);
+            this.username = getConfigValue(DATASOURCE_USERNAME, config);
+            this.password = getConfigValue(DATASOURCE_PASSWORD, config);
+        }
+
+        @Override
+        public Jdbc jdbc() {
+            return this.jdbc;
+        }
+
+        @Override
+        public String username() {
+            return this.username;
+        }
+
+        @Override
+        public Optional<String> password() {
+            return Optional.ofNullable(this.password);
+        }
+
+        private class JdbcImpl implements Jdbc {
+
+            @Override
+            public String url() {
+                return HibernateToolsConfigImpl.this.url;
+            }
+        }
+
     }
 
 }
