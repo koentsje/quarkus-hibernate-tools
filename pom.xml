@@ -31,7 +31,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.19.3</quarkus.version>
-        <jandex-maven-plugin.version>3.2.5</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.2.7</jandex-maven-plugin.version>
         <hibernate.version>6.6.6.Final</hibernate.version>
     </properties>
 
